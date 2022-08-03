@@ -1,11 +1,8 @@
 import argparse
-
 import numpy as np
 from timeit import default_timer as timer
 import datetime
-import sys
-from termcolor import colored
-# global variables
+
 
 # Position of milestones in the order:
 # 1. Start state
