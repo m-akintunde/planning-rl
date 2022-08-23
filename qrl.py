@@ -7,6 +7,7 @@ import numpy as np
 from main import BOARD_ROWS, BOARD_COLS, State, MILESTONES, OBJ
 
 
+
 class QLAgent:
     def __init__(self, start_state, win_state, lr=0.2, exp_rate=0.5, decay_gamma=0.9, obj=True):
         self.states = []
@@ -15,7 +16,7 @@ class QLAgent:
         self.start_state = start_state
         self.obj = obj
         print("Constructing agent with start", start_state, "win state", win_state)
-        self.State = State(state=self.start_state, win_state=self.win_state, obj=self.obj)
+        self.State = State(state=self.start_state, win_state=self.win_state, determine=False, obj=self.obj)
         self.isEnd = self.State.isEnd
         self.decay_gamma = decay_gamma
         self.lr = lr
@@ -66,12 +67,12 @@ class QLAgent:
     def play(self, rounds=10):
         i = 0
         while i < rounds:
-            # to the end of game back propagate reward
+            # If at the end of game back propagate reward
             if self.State.isEnd:
                 # back propagate
 
-                # Set all actions of the last state as the current reward which is either +1 or -1.
-                # Helps to converge faster.
+                # Set all actions of the last state as the current reward (must be 1 since so fail state).
+                # Helps to "converge faster".
                 reward = self.State.giveReward()
                 for a in self.actions:
                     self.Q_values[self.State.state][a] = reward
@@ -97,12 +98,12 @@ class QLAgent:
 
     def reset(self):
         self.states = []
-        self.State = State(self.start_state, self.win_state, self.obj)
+        self.State = State(self.start_state, self.win_state, False, self.obj)
         self.isEnd = self.State.isEnd
 
     def takeAction(self, action):
         position = self.State.nxtPosition(action)
-        return State(position, self.win_state, self.obj)
+        return State(position, self.win_state, False, self.obj)
 
 
 if __name__ == "__main__":
@@ -130,6 +131,7 @@ if __name__ == "__main__":
              "school",
              "construction site",
              "hospital"]
+
     while end < len(MILESTONES):
         # Repeatedly train rl agent to reach each milestone.
 

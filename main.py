@@ -43,12 +43,10 @@ OBJ = [
     , (0, 6)
        ]
 
-# TODO: Implement non-deterministic env for when flag is set to False.
-DETERMINISTIC = True
 
 # Representation of the gridworld.
 class State:
-    def __init__(self, state, win_state, obj=True):
+    def __init__(self, state, win_state, determine, obj=True):
         self.board = np.zeros([BOARD_ROWS, BOARD_COLS])
         self.obj = obj
         if self.obj:
@@ -56,7 +54,7 @@ class State:
                 self.board[o[0], o[1]] = -1
         self.state = state
         self.isEnd = False
-        self.determine = DETERMINISTIC
+        self.determine = determine
         self.win_state = win_state
 
     def giveReward(self):
@@ -71,14 +69,23 @@ class State:
         if self.state == self.win_state:  # or (self.state == LOSE_STATE):
             self.isEnd = True
 
+    def _chooseActionProb(self, action):
+        if action == "up":
+            return np.random.choice(["up", "left", "right"], p=[0.6, 0.2, 0.2])
+        if action == "down":
+            return np.random.choice(["down", "left", "right"], p=[0.6, 0.2, 0.2])
+        if action == "left":
+            return np.random.choice(["left", "up", "down"], p=[0.6, 0.2, 0.2])
+        if action == "right":
+            return np.random.choice(["right", "up", "down"], p=[0.6, 0.2, 0.2])
+
     def nxtPosition(self, action):
         """
         action: up, down, left, right
         -------------
-        0 | 1 | 2| 3|
-        1 |
-        2 |
-        return next position
+        Takes an action, validates the legitimacy of the action, returns the state corresponding to performing that
+        action.
+        returns: next position
         """
         if self.determine:
             if action == "up":
@@ -89,23 +96,28 @@ class State:
                 nxtState = (self.state[0], self.state[1] - 1)
             else:
                 nxtState = (self.state[0], self.state[1] + 1)
-            # if next state legal
-            if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
-                if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
-                    if not self.obj:
-                        return nxtState
-                    # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                    elif self.obj and nxtState not in OBJ:
-                        return nxtState
-            return self.state
 
+        else:
+            # non-deterministic.
+            action = self._chooseActionProb(action)
+            self.determine = True
+
+            # Call this function again as if in deterministic case.
+            nxtState = self.nxtPosition(action)
+
+        # if next state legal
+        if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
+            if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
+                if not self.obj:
+                    return nxtState
+                # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
+                elif self.obj and nxtState not in OBJ:
+                    return nxtState
+        return self.state
     def nxtPolicyPosition(self, action):
         """
         action: up, down, left, right
         -------------
-        0 | 1 | 2| 3|
-        1 |
-        2 |
         return next position
         """
         if self.determine:
@@ -141,7 +153,8 @@ class State:
         print('-----------------')
 
 
-# Reinforcement learning agent
+
+# Value-iteration agent
 class Agent:
 
     def __init__(self, start_state, win_state, lr=0.2, exp_rate=0.5, obj=True):
@@ -151,7 +164,8 @@ class Agent:
         self.start_state = start_state
         self.obj = obj
         print("Constructing agent with start", start_state, "win state", win_state)
-        self.State = State(state=self.start_state, win_state=self.win_state, obj=self.obj)
+        self.determine = True
+        self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine, obj=self.obj)
         self.lr = lr
 
         # Probability of choosing a random action (exploration) rather than choosing an action
@@ -199,11 +213,11 @@ class Agent:
 
     def takeAction(self, action):
         position = self.State.nxtPosition(action)
-        return State(position, self.win_state, self.obj)
+        return State(position, self.win_state, True, self.obj)
 
     def reset(self):
         self.states = []
-        self.State = State(self.start_state, self.win_state, self.obj)
+        self.State = State(self.start_state, self.win_state, True, self.obj)
 
     def play(self, rounds=10):
         i = 0
@@ -245,7 +259,7 @@ class Agent:
     # Extract policy from state rewards.
     def getPolicy(self):
         # "Reset" with initial state at the beginning of path.
-        self.State = State(self.start_state, self.win_state, self.obj)
+        self.State = State(self.start_state, self.win_state, self.determine, self.obj)
         self.states = [(self.State.state, "*")]
         while not self.State.isEnd:
             action = self.choosePolicyAction()
@@ -303,6 +317,7 @@ if __name__ == "__main__":
                         help="Exploration rate.")
     parser.add_argument("-eps", "--episodes", default=100, type=float,
                         help="Number of episodes to train for.")
+    parser.add_argument("-nd", "--nondet", default=False, type=bool, help="Non-deterministic env or not")
 
     # TODO: Implement timeout functionality.
     parser.add_argument("-to", "--timeout", default=2, type=int, help="Timeout in minutes.")
