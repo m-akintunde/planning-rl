@@ -127,7 +127,7 @@ class QLAgent:
         action = ""
         for a in self.actions:
             # if the action is deterministic (does this apply here?)
-            nxt_pos = self.State.nxtPolicyPosition(a)
+            nxt_pos = self.State.nxtPosition(a)
             if nxt_pos == self.State.state or (len(self.states) > 0 and nxt_pos in [s[0] for s in self.states]):
                 nxt_reward = 0
             else:
