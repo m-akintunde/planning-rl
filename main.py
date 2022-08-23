@@ -71,13 +71,13 @@ class State:
 
     def _chooseActionProb(self, action):
         if action == "up":
-            return np.random.choice(["up", "left", "right"], p=[0.6, 0.2, 0.2])
+            return np.random.choice(["up", "left", "right"], p=[0.8, 0.1, 0.1])
         if action == "down":
-            return np.random.choice(["down", "left", "right"], p=[0.6, 0.2, 0.2])
+            return np.random.choice(["down", "left", "right"], p=[0.8, 0.1, 0.1])
         if action == "left":
-            return np.random.choice(["left", "up", "down"], p=[0.6, 0.2, 0.2])
+            return np.random.choice(["left", "up", "down"], p=[0.8, 0.1, 0.1])
         if action == "right":
-            return np.random.choice(["right", "up", "down"], p=[0.6, 0.2, 0.2])
+            return np.random.choice(["right", "up", "down"], p=[0.8, 0.1, 0.1])
 
     def nxtPosition(self, action):
         """
@@ -114,26 +114,31 @@ class State:
                 elif self.obj and nxtState not in OBJ:
                     return nxtState
         return self.state
+
     def nxtPolicyPosition(self, action):
         """
         action: up, down, left, right
         -------------
         return next position
         """
-        if self.determine:
-            if action == "up":
-                nxtState = (self.state[0] - 1, self.state[1])
-            elif action == "down":
-                nxtState = (self.state[0] + 1, self.state[1])
-            elif action == "left":
-                nxtState = (self.state[0], self.state[1] - 1)
-            else:
-                nxtState = (self.state[0], self.state[1] + 1)
-            # if next state legal
-            if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
-                if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
+        if action == "up":
+            nxtState = (self.state[0] - 1, self.state[1])
+        elif action == "down":
+            nxtState = (self.state[0] + 1, self.state[1])
+        elif action == "left":
+            nxtState = (self.state[0], self.state[1] - 1)
+        else:
+            nxtState = (self.state[0], self.state[1] + 1)
+
+        # if next state legal
+        if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
+            if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
+                if not self.obj:
                     return nxtState
-            return self.state
+                # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
+                elif self.obj and nxtState not in OBJ:
+                    return nxtState
+        return self.state
 
     # Unused.
     def showBoard(self):

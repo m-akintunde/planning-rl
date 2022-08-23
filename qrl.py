@@ -16,7 +16,8 @@ class QLAgent:
         self.start_state = start_state
         self.obj = obj
         print("Constructing agent with start", start_state, "win state", win_state)
-        self.State = State(state=self.start_state, win_state=self.win_state, determine=False, obj=self.obj)
+        self.determine = False
+        self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine, obj=self.obj)
         self.isEnd = self.State.isEnd
         self.decay_gamma = decay_gamma
         self.lr = lr
@@ -28,7 +29,23 @@ class QLAgent:
                 self.Q_values[(i, j)] = {}
                 for a in self.actions:
                     self.Q_values[(i, j)][a] = 0
-
+    def getPolicy(self):
+        # "Reset" with initial state at the beginning of path.
+        self.State = State(self.start_state, self.win_state, self.determine, self.obj)
+        self.states = [(self.State.state, "*")]
+        while not self.State.isEnd:
+            action = max(self.Q_values[self.State.state], key=self.Q_values[self.State.state].get)
+            # append trace
+            self.states[-1] = (self.states[-1][0], action)
+            self.states.append((self.State.nxtPolicyPosition(action), "*"))
+            print("current position {} action {}".format(self.State.state, action))
+            # by taking the action, it reaches the next state
+            self.State = self.takeAction(action)
+            # mark is end
+            self.State.isEndFunc()
+            print("nxt state", self.State.state)
+            print("---------------------")
+        return self.states
     def chooseAction(self):
         mx_nxt_reward = 0
         action = ""
@@ -71,7 +88,7 @@ class QLAgent:
             if self.State.isEnd:
                 # back propagate
 
-                # Set all actions of the last state as the current reward (must be 1 since so fail state).
+                # Set all actions of the last state as the current reward (must be 1 since no fail state).
                 # Helps to "converge faster".
                 reward = self.State.giveReward()
                 for a in self.actions:
@@ -105,6 +122,37 @@ class QLAgent:
         position = self.State.nxtPosition(action)
         return State(position, self.win_state, False, self.obj)
 
+    def chooseNondetPolicyAction(self):
+        mx_nxt_reward = 0
+        action = ""
+        for a in self.actions:
+            # if the action is deterministic (does this apply here?)
+            nxt_pos = self.State.nxtPolicyPosition(a)
+            if nxt_pos == self.State.state or (len(self.states) > 0 and nxt_pos in [s[0] for s in self.states]):
+                nxt_reward = 0
+            else:
+                nxt_reward = self.Q_values[nxt_pos][a]
+            if nxt_reward > mx_nxt_reward:
+                action = a
+                mx_nxt_reward = nxt_reward
+        return action
+    def getNondetPolicy(self):
+        # "Reset" with initial state at the beginning of path.
+        self.State = State(self.start_state, self.win_state, self.determine, self.obj)
+        self.states = [(self.State.state, "*")]
+        while not self.State.isEnd:
+            action = self.chooseNondetPolicyAction()
+            # append trace
+            self.states[-1] = (self.states[-1][0], action)
+            self.states.append((self.State.nxtPolicyPosition(action), "*"))
+            print("current position {} action {}".format(self.State.state, action))
+            # by taking the action, it reaches the next state
+            self.State = self.takeAction(action)
+            # mark is end
+            self.State.isEndFunc()
+            print("nxt state", self.State.state)
+            print("---------------------")
+        return self.states
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Path-planning using value iteration.")
@@ -137,7 +185,7 @@ if __name__ == "__main__":
 
         ag = QLAgent(start_state=MILESTONES[start], win_state=MILESTONES[end],
                    lr=ARGS.learning_rate, exp_rate=ARGS.exp_rate, obj=obj)
-        print("Inital Q values ... \n")
+        print("Initial Q values ... \n")
         # TODO; get arrow with max q value, put on grid.
         #print(ag.Q_values)
         print("Start: ", datetime.datetime.now())  # Do not delete
@@ -149,20 +197,19 @@ if __name__ == "__main__":
         print("End: ", datetime.datetime.now())  # Do not delete
         print("Time taken               ", end_time - start_time)
 
-        # TODO: How will the policies look?
-        # print("Policy for the above state values:")
-        #
-        # # The policy as an array of (state, action) pairs.
-        # s = ag.getPolicy()
-        #
-        # # *** Extract the actions from the policy. This will be used in integration into UI. ***
-        # actions = [a for _, a in s]
-        #
-        # total_length += len(s) - 1
-        print(names[start], "to", names[end], "after", total_length, "blocks.")
         ag.showPolicyValues()
+
+        print("Policy for the above state values:")
+
+        # The policy as an array of (state, action) pairs.
+        s = ag.getPolicy()
+
+        # *** Extract the actions from the policy. This will be used in integration into UI. ***
+        actions = [a for _, a in s]
+
+        total_length += len(s) - 1
+        print(names[start], "to", names[end], "after", total_length, "blocks.")
         start += 1
         end += 1
 
-    # TODO: Get total length of states.
-    # print("Total length: ", total_length, "blocks.")
+    print("Total length: ", total_length, "blocks.")
