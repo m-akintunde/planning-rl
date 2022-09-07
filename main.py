@@ -3,45 +3,38 @@ import numpy as np
 from timeit import default_timer as timer
 import datetime
 
-
-# Position of milestones in the order:
-# 1. Start state
-MILESTONES = [(9, 0), (7, 3), (4, 6), (1, 4), (0, 9)]
-
 BOARD_ROWS = 10
 BOARD_COLS = 10
 
-# Positions of red blocks
-OBJ = [
-    (8, 0)
-    , (8, 1)
-    , (8, 2)
-    , (8, 3)
-    , (7, 0)
-    , (7, 1)
-    , (7, 2)
-    , (6, 0)
-    , (6, 1)
-    , (6, 2)
-    , (5, 3)
-    , (5, 4)
-    , (5, 5)
-    , (5, 6)
-    , (5, 7)
-    , (4, 5)
-    , (4, 4)
-    , (4, 7)
-    , (2, 3)
-    , (2, 5)
-    , (2, 6)
-    , (1, 3)
-    , (1, 5)
-    , (1, 6)
-    , (0, 3)
-    , (0, 4)
-    , (0, 5)
-    , (0, 6)
-       ]
+cm = [
+     1, 1, 1, 3, 3, 3, 3, 1, 1, 1,
+     1, 1, 1, 3, 1, 3, 3, 1, 1, 1,
+     1, 1, 1, 3, 1, 3, 3, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 3, 3, 1, 3, 1, 1,
+     1, 1, 1, 3, 3, 3, 3, 3, 1, 1,
+     3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+     3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+     3, 3, 3, 3, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+]
+
+# Converts a pair to an integer.
+def pair_to_int(i, j):
+    return i * 10 + j
+
+
+# Convert an int to a coordinate pair.
+def int_to_pair(i):
+    return (i // 10, i % 10)
+
+
+OBJ = [int_to_pair(i) for i, j in enumerate(cm) if j == 3]
+
+milestones = [90, 73, 46, 14, 9]
+# Position of milestones in the order:
+# 1. Start state
+MILESTONES = [int_to_pair(i) for i in milestones]
 
 
 # Representation of the gridworld.
@@ -49,6 +42,7 @@ class State:
     def __init__(self, state, win_state, determine, obj=True):
         self.board = np.zeros([BOARD_ROWS, BOARD_COLS])
         self.obj = obj
+
         if self.obj:
             for o in OBJ:
                 self.board[o[0], o[1]] = -1
@@ -335,6 +329,9 @@ if __name__ == "__main__":
     obj = ARGS.obj
     p = []
     names = {1: "grocery store", 2: "school", 3: "construction site", 4: "hospital"}
+    cost = 0
+    init_plan_state = None
+    total_plan = []
     while end < len(MILESTONES):
         # Repeatedly train rl agent to reach each milestone.
 
@@ -355,12 +352,18 @@ if __name__ == "__main__":
         s = ag.getPolicy()
 
         # *** Extract the actions from the policy. This will be used in integration into UI. ***
-        actions = [a for _, a in s]
-
+        plan = [c for c, a in s]
+        if init_plan_state is None:
+            init_plan_state = plan[0]
+        cost += sum(cm[pair_to_int(i, j)] for i, j in plan[1:])
+        total_plan += plan[1:]
+        print("Cost so far: ", cost)
         total_length += len(s) - 1
         print(names[end], "after", total_length, "blocks.")
         ag.showPolicyValues(s)
         start += 1
         end += 1
-
+    total_plan = [init_plan_state] + total_plan
     print("Total length: ", total_length, "blocks.")
+    print("Plan: ", total_plan)
+    print("Total cost: ", cost)
