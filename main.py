@@ -6,7 +6,7 @@ import datetime
 BOARD_ROWS = 10
 BOARD_COLS = 10
 
-cm = [
+CM = [
      1, 1, 1, 3, 3, 3, 3, 1, 1, 1,
      1, 1, 1, 3, 1, 3, 3, 1, 1, 1,
      1, 1, 1, 3, 1, 3, 3, 1, 1, 1,
@@ -29,7 +29,7 @@ def int_to_pair(i):
     return (i // 10, i % 10)
 
 
-OBJ = [int_to_pair(i) for i, j in enumerate(cm) if j == 3]
+# OBJ = [int_to_pair(i) for i, j in enumerate(cm) if j == 3]
 
 milestones = [90, 73, 46, 14, 9]
 # Position of milestones in the order:
@@ -39,12 +39,13 @@ MILESTONES = [int_to_pair(i) for i in milestones]
 
 # Representation of the gridworld.
 class State:
-    def __init__(self, state, win_state, determine, obj=True):
+    def __init__(self, state, win_state, determine, cm, obj=True):
         self.board = np.zeros([BOARD_ROWS, BOARD_COLS])
         self.obj = obj
-
+        self.cm = cm
+        self.objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 3]
         if self.obj:
-            for o in OBJ:
+            for o in self.objs:
                 self.board[o[0], o[1]] = -1
         self.state = state
         self.isEnd = False
@@ -105,7 +106,7 @@ class State:
                 if not self.obj:
                     return nxtState
                 # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                elif self.obj and nxtState not in OBJ:
+                elif self.obj and nxtState not in self.objs:
                     return nxtState
         return self.state
 
@@ -130,33 +131,15 @@ class State:
                 if not self.obj:
                     return nxtState
                 # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                elif self.obj and nxtState not in OBJ:
+                elif self.obj and nxtState not in self.objs:
                     return nxtState
         return self.state
-
-    # Unused.
-    def showBoard(self):
-        self.board[self.state] = 1
-        for i in range(0, BOARD_ROWS):
-            print('-----------------')
-            out = '| '
-            for j in range(0, BOARD_COLS):
-                if self.board[i, j] == 1:
-                    token = '*'
-                if self.board[i, j] == -1:
-                    token = 'z'
-                if self.board[i, j] == 0:
-                    token = '0'
-                out += token + ' | '
-            print(out)
-        print('-----------------')
-
 
 
 # Value-iteration agent
 class Agent:
 
-    def __init__(self, start_state, win_state, lr=0.2, exp_rate=0.5, obj=True):
+    def __init__(self, start_state, win_state, cm, lr=0.2, exp_rate=0.5, obj=True):
         self.states = []
         self.actions = ["up", "down", "left", "right"]
         self.win_state = win_state
@@ -164,8 +147,9 @@ class Agent:
         self.obj = obj
         print("Constructing agent with start", start_state, "win state", win_state)
         self.determine = True
-        self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine, obj=self.obj)
+        self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine, obj=self.obj, cm=cm)
         self.lr = lr
+        self.cm = cm
 
         # Probability of choosing a random action (exploration) rather than choosing an action
         # greedily based on what has already been learned.
@@ -212,11 +196,11 @@ class Agent:
 
     def takeAction(self, action):
         position = self.State.nxtPosition(action)
-        return State(position, self.win_state, True, self.obj)
+        return State(position, self.win_state, True, self.cm, self.obj)
 
     def reset(self):
         self.states = []
-        self.State = State(self.start_state, self.win_state, True, self.obj)
+        self.State = State(self.start_state, self.win_state, True, self.cm, self.obj)
 
     def play(self, rounds=10):
         i = 0
@@ -258,7 +242,7 @@ class Agent:
     # Extract policy from state rewards.
     def getPolicy(self):
         # "Reset" with initial state at the beginning of path.
-        self.State = State(self.start_state, self.win_state, self.determine, self.obj)
+        self.State = State(self.start_state, self.win_state, self.determine, self.cm, self.obj)
         self.states = [(self.State.state, "*")]
         while not self.State.isEnd:
             action = self.choosePolicyAction()
@@ -287,7 +271,7 @@ class Agent:
         o += '\n-------------------------------------------------------------------------------------------'
         return o
 
-    def showPolicyValues(self, states):
+    def showPolicyValues(self, states, objs):
         directions = {"left": "<", "right": ">", "up": "^", "down": "v"}
         for i in range(0, BOARD_ROWS):
             print('-------------------------------------------------------------------------------------------')
@@ -298,13 +282,39 @@ class Agent:
                 sts_map = dict(states)
                 if (i, j) in sts:
                     st = directions.get(sts_map[(i, j)], "*")
-                if self.obj and (i, j) in OBJ:
+                if self.obj and (i, j) in objs:
                     st = "----"
 
                 out += str(st).ljust(6) + ' | '
             print(out)
         print('-------------------------------------------------------------------------------------------')
         print()
+
+def get_plan(cost_map, new_initial_state, milestones_list, obj, lr, er):
+    if not milestones_list:
+        return
+    dest = milestones_list[0]
+    ag = Agent(start_state=new_initial_state, win_state=dest,
+               lr=lr, exp_rate=er, cm=cost_map, obj=obj)
+    objs = ag.State.objs
+    print("Start: ", datetime.datetime.now())  # Do not delete
+    start_time = timer()
+    ag.play(ARGS.episodes)
+    print("State values computed using value iteration:")
+    ag.showValues()
+    end_time = timer()
+
+    print("End: ", datetime.datetime.now())  # Do not delete
+    print("Time taken               ", end_time - start_time)
+    print("Policy for the above state values:")
+
+    # The policy as an array of (state, action) pairs.
+    s = ag.getPolicy()
+    plan_coords = [c for c, a in s]
+    cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
+    ag.showPolicyValues(s, objs)
+    # *** Extract the actions from the policy. This will be used in integration into UI. ***
+    return plan_coords, cost
 
 
 if __name__ == "__main__":
@@ -332,38 +342,29 @@ if __name__ == "__main__":
     cost = 0
     init_plan_state = None
     total_plan = []
+    cm = CM
+    cost_so_far = 0
+
     while end < len(MILESTONES):
+        init_state = MILESTONES[start]
+        milestones_list = MILESTONES[end:]
+        if not milestones_list:
+            break
         # Repeatedly train rl agent to reach each milestone.
-
-        ag = Agent(start_state=MILESTONES[start], win_state=MILESTONES[end],
-                   lr=ARGS.learning_rate, exp_rate=ARGS.exp_rate, obj=obj)
-        print("Start: ", datetime.datetime.now())  # Do not delete
-        start_time = timer()
-        ag.play(ARGS.episodes)
-        print("State values computed using value iteration:")
-        ag.showValues()
-        end_time = timer()
-
-        print("End: ", datetime.datetime.now())  # Do not delete
-        print("Time taken               ", end_time - start_time)
-        print("Policy for the above state values:")
-
-        # The policy as an array of (state, action) pairs.
-        s = ag.getPolicy()
-
-        # *** Extract the actions from the policy. This will be used in integration into UI. ***
-        plan = [c for c, a in s]
+        plan_coords, cost = get_plan(cm, init_state, milestones_list, obj, ARGS.learning_rate, ARGS.exp_rate)
+        cost_so_far += cost
         if init_plan_state is None:
-            init_plan_state = plan[0]
-        cost += sum(cm[pair_to_int(i, j)] for i, j in plan[1:])
-        total_plan += plan[1:]
-        print("Cost so far: ", cost)
-        total_length += len(s) - 1
+            init_plan_state = plan_coords[0]
+        total_plan += plan_coords[1:]
+        print("Cost so far: ", cost_so_far)
+        total_length += len(plan_coords) - 1
         print(names[end], "after", total_length, "blocks.")
-        ag.showPolicyValues(s)
+
         start += 1
         end += 1
+
     total_plan = [init_plan_state] + total_plan
     print("Total length: ", total_length, "blocks.")
     print("Plan: ", total_plan)
-    print("Total cost: ", cost)
+    print("Total cost: ", cost_so_far)
+
