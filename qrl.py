@@ -4,7 +4,7 @@ from timeit import default_timer as timer
 import datetime
 import numpy as np
 
-from main import BOARD_ROWS, BOARD_COLS, State, MILESTONES, OBJ
+from main import BOARD_ROWS, BOARD_COLS, State, MILESTONES
 
 
 
