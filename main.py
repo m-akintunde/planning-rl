@@ -3,30 +3,7 @@ import numpy as np
 from timeit import default_timer as timer
 import datetime
 
-from utils import pair_to_int, int_to_pair
-
-BOARD_ROWS = 10
-BOARD_COLS = 10
-
-CM = [
-     1, 1, 1, 3, 3, 3, 3, 1, 1, 1,
-     1, 1, 1, 3, 1, 3, 3, 1, 1, 1,
-     1, 1, 1, 3, 1, 3, 3, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 3, 3, 1, 3, 1, 1,
-     1, 1, 1, 3, 3, 3, 3, 3, 1, 1,
-     3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
-     3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
-     3, 3, 3, 3, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-]
-
-# OBJ = [int_to_pair(i) for i, j in enumerate(cm) if j == 3]
-
-milestones = [90, 73, 46, 14, 9]
-# Position of milestones in the order:
-# 1. Start state
-MILESTONES = [int_to_pair(i) for i in milestones]
+from utils import pair_to_int, int_to_pair, MILESTONES, BOARD_ROWS, BOARD_COLS, CM, NAMES
 
 
 # Representation of the gridworld.
@@ -286,8 +263,9 @@ def get_plan(cost_map, new_initial_state, milestones_list, obj, lr, er, eps):
     if not milestones_list:
         return
     cost_map = list(map(int, cost_map))
+    init = int(new_initial_state)
     dest = int(milestones_list[0])
-    ag = Agent(start_state=int_to_pair(new_initial_state), win_state=int_to_pair(dest),
+    ag = Agent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
                lr=lr, exp_rate=er, cm=cost_map, obj=obj)
     objs = ag.State.objs
     print("Start: ", datetime.datetime.now())  # Do not delete
@@ -321,8 +299,8 @@ if __name__ == "__main__":
                         help="Number of episodes to train for.")
     parser.add_argument("-nd", "--nondet", default=False, action='store_true', help="Non-deterministic env or not")
     parser.add_argument("-cm", "--costmap", default=CM, nargs='+', help="Cost map")
-    parser.add_argument("-i", "--init", default=90, type=int, help="New initial state")
-    parser.add_argument("-ms", "--milestones", default=milestones[1:], nargs='+', help="List of remaining milestones")
+    parser.add_argument("-i", "--init", default=MILESTONES[0], type=int, help="New initial state")
+    parser.add_argument("-ms", "--milestones", default=MILESTONES[1:], nargs='+', help="List of remaining milestones")
     parser.add_argument("-s", "--single", default=False, action='store_true', help="Single path or iterate through all")
 
     # TODO: Implement timeout functionality.
@@ -342,27 +320,27 @@ if __name__ == "__main__":
     end = 1
     total_length = 0
     p = []
-    names = {1: "grocery store", 2: "school", 3: "construction site", 4: "hospital"}
     cost = 0
     init_plan_state = None
     total_plan = []
-    cm = CM
     cost_so_far = 0
-
-    while end < len(milestones):
+    init_state = ARGS.init
+    milestones_list = ARGS.milestones
+    milestones = [init_state] + milestones_list
+    while end < len(ARGS.milestones) + 1:
         init_state = milestones[start]
         milestones_list = milestones[end:]
         if not milestones_list:
             break
         # Repeatedly train rl agent to reach each milestone.
-        plan_coords, cost = get_plan(cm, init_state, milestones_list, ARGS.obj, ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes)
+        plan_coords, cost = get_plan(ARGS.costmap, init_state, milestones_list, ARGS.obj, ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes)
         cost_so_far += cost
         if init_plan_state is None:
             init_plan_state = plan_coords[0]
         total_plan += plan_coords[1:]
         print("Cost so far: ", cost_so_far)
         total_length += len(plan_coords) - 1
-        print(names[end], "after", total_length, "blocks.")
+        print("Reached", NAMES.get(int(milestones[end]), "cell " + milestones[end]), "after", total_length, "blocks.")
 
         start += 1
         end += 1

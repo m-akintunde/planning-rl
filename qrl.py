@@ -4,8 +4,8 @@ from timeit import default_timer as timer
 import datetime
 import numpy as np
 
-from main import BOARD_ROWS, BOARD_COLS, State, MILESTONES
-
+from main import State, MILESTONES
+from utils import BOARD_ROWS, BOARD_COLS
 
 
 class QLAgent:
