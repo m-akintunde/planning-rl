@@ -159,6 +159,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--obj", type=bool, default=False,
                         help="Whether using red blocks or not. Default: False.")
     parser.add_argument("-l", "--learning_rate", default=0.2, type=float, help="Learning rate")
+    parser.add_argument("-g", "--gamma", default=0.9, type=float, help="Gamma decay rate")
     parser.add_argument("-e", "--exp_rate", default=0.5, type=float,
                         help="Exploration rate.")
     parser.add_argument("-eps", "--episodes", default=100, type=float,
@@ -184,7 +185,7 @@ if __name__ == "__main__":
         # Repeatedly train rl agent to reach each milestone.
 
         ag = QLAgent(start_state=MILESTONES[start], win_state=MILESTONES[end],
-                   lr=ARGS.learning_rate, exp_rate=ARGS.exp_rate, obj=obj)
+                   lr=ARGS.learning_rate, exp_rate=ARGS.exp_rate, decay_gamma=ARGS.gamma, obj=obj)
         print("Initial Q values ... \n")
         # TODO; get arrow with max q value, put on grid.
         #print(ag.Q_values)
