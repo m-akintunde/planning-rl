@@ -114,7 +114,7 @@ class Agent:
         self.win_state = win_state
         self.start_state = start_state
         self.obj = obj
-        print("Constructing agent with start", start_state, "win state", win_state)
+        print("Constructing value iteration (deterministic) agent with start", start_state, "win state", win_state)
         self.determine = True
         self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine, obj=self.obj, cm=cm)
         self.lr = lr
@@ -297,7 +297,8 @@ if __name__ == "__main__":
                         help="Exploration rate.")
     parser.add_argument("-eps", "--episodes", default=100, type=float,
                         help="Number of episodes to train for.")
-    parser.add_argument("-nd", "--nondet", default=False, action='store_true', help="Non-deterministic env or not")
+    # TODO: Use this to toggle between the two agents.
+    # parser.add_argument("-nd", "--nondet", default=False, action='store_true', help="Non-deterministic env or not")
     parser.add_argument("-cm", "--costmap", default=CM, nargs='+', help="Cost map")
     parser.add_argument("-i", "--init", default=MILESTONES[0], type=int, help="New initial state")
     parser.add_argument("-ms", "--milestones", default=MILESTONES[1:], nargs='+', help="List of remaining milestones")
