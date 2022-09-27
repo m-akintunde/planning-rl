@@ -12,7 +12,11 @@ class State:
         self.board = np.zeros([BOARD_ROWS, BOARD_COLS])
         self.obj = obj
         self.cm = cm
-        self.objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 3]
+
+        self.emergency_objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 100]
+        self.objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 3] + self.emergency_objs
+        for o in self.emergency_objs:
+            self.board[o[0], o[1]] = -1
         if self.obj:
             for o in self.objs:
                 self.board[o[0], o[1]] = -1
@@ -73,7 +77,8 @@ class State:
         if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
             if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
                 if not self.obj:
-                    return nxtState
+                    if nxtState not in self.emergency_objs:
+                        return nxtState
                 # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
                 elif self.obj and nxtState not in self.objs:
                     return nxtState
@@ -98,7 +103,8 @@ class State:
         if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
             if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
                 if not self.obj:
-                    return nxtState
+                    if nxtState not in self.emergency_objs:
+                        return nxtState
                 # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
                 elif self.obj and nxtState not in self.objs:
                     return nxtState
@@ -240,7 +246,7 @@ class Agent:
         o += '\n-------------------------------------------------------------------------------------------'
         return o
 
-    def showPolicyValues(self, states, objs):
+    def showPolicyValues(self, states, objs, emergency_objs):
         directions = {"left": "<", "right": ">", "up": "^", "down": "v"}
         for i in range(0, BOARD_ROWS):
             print('-------------------------------------------------------------------------------------------')
@@ -251,7 +257,7 @@ class Agent:
                 sts_map = dict(states)
                 if (i, j) in sts:
                     st = directions.get(sts_map[(i, j)], "*")
-                if self.obj and (i, j) in objs:
+                if (i, j) in emergency_objs or self.obj and (i, j) in objs:
                     st = "----"
 
                 out += str(st).ljust(6) + ' | '
@@ -268,6 +274,7 @@ def get_plan(cost_map, new_initial_state, milestones_list, obj, lr, er, eps):
     ag = Agent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
                lr=lr, exp_rate=er, cm=cost_map, obj=obj)
     objs = ag.State.objs
+    emergency_objs = ag.State.emergency_objs
     print("Start: ", datetime.datetime.now())  # Do not delete
     start_time = timer()
     ag.play(eps)
@@ -283,7 +290,7 @@ def get_plan(cost_map, new_initial_state, milestones_list, obj, lr, er, eps):
     s = ag.getPolicy()
     plan_coords = [c for c, a in s]
     cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
-    ag.showPolicyValues(s, objs)
+    ag.showPolicyValues(s, objs, emergency_objs)
     # *** Extract the actions from the policy. This will be used in integration into UI. ***
     return plan_coords, cost
 

@@ -63,15 +63,17 @@ class QLAgent:
                     mx_nxt_reward = nxt_reward
         return action
 
-    def showPolicyValues(self, states, objs):
+    def showPolicyValues(self, objs, emergency_objs):
         directions = {"left": "<", "right": ">", "up": "^", "down": "v"}
+        #for k, v in self.Q_values.items():
+        #    print(k, v)
         for i in range(0, BOARD_ROWS):
             print('-------------------------------------------------------------------------------------------')
             out = '| '
             for j in range(0, BOARD_COLS):
                 q_vals = self.Q_values[(i, j)]
                 st = directions[max(q_vals, key=q_vals.get)]
-                if self.obj and (i, j) in objs:
+                if (i, j) in emergency_objs or self.obj and (i, j) in objs:
                     st = "----"
                 if (i, j) == self.win_state:
                     st = "*"
@@ -155,17 +157,18 @@ class QLAgent:
             print("---------------------")
         return self.states
 
-def get_plan_nondet(cost_map, new_initial_state, milestones_list, obj, lr, er, eps, gamma):
+def get_plan_nondet(cost_map, new_initial_state, milestones_list, obj, lr, er, eps, gamma, q):
     if not milestones_list:
         return
     cost_map = list(map(int, cost_map))
     init = int(new_initial_state)
     dest = int(milestones_list[0])
     ag = QLAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
-                 lr=lr, exp_rate=er, decay_gamma=ARGS.gamma,
+                 lr=lr, exp_rate=er, decay_gamma=gamma,
                  obj=obj, cm=cost_map)
 
     objs = ag.State.objs
+    emergency_objs = ag.State.emergency_objs
     print("Start: ", datetime.datetime.now())  # Do not delete
     start_time = timer()
     ag.play(eps)
@@ -180,12 +183,17 @@ def get_plan_nondet(cost_map, new_initial_state, milestones_list, obj, lr, er, e
 
     # The policy as an array of (state, action) pairs.
     s = ag.getPolicy()
-    ag.showPolicyValues(s, objs)
-
+    ag.showPolicyValues(objs, emergency_objs)
+    d = {}
+    for k, v in ag.Q_values.items():
+        d[pair_to_int(*k)] = v
+        if q:
+            print(pair_to_int(*k), v)
     plan_coords = [c for c, a in s]
     cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
     # *** Extract the actions from the policy. This will be used in integration into UI. ***
-    return plan_coords, cost
+
+    return plan_coords, cost, d
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Path-planning using q-learning.")
@@ -203,7 +211,8 @@ if __name__ == "__main__":
     parser.add_argument("-ms", "--milestones", default=MILESTONES[1:], nargs='+', help="List of remaining milestones")
     parser.add_argument("-s", "--single", default=False, action='store_true',
                         help="Single path or iterate through all milestones")
-
+    parser.add_argument("-q", "--show_qvals", default=False, action='store_true',
+                        help="Whether to show q values or not. Default: False.")
     # TODO: Implement timeout functionality.
     parser.add_argument("-to", "--timeout", default=2, type=int, help="Timeout in minutes.")
 
@@ -225,7 +234,7 @@ if __name__ == "__main__":
         if ARGS.init and (not ARGS.milestones or ARGS.init == ARGS.milestones[0]):
             raise Exception("List of milestones is required when initial state specified.")
         plan_coords, cost = get_plan_nondet(ARGS.costmap, init_state, milestones_list, ARGS.obj, ARGS.learning_rate,
-                                            ARGS.exp_rate, ARGS.episodes, ARGS.gamma)
+                                            ARGS.exp_rate, ARGS.episodes, ARGS.gamma, ARGS.show_qvals)
         print("Plan: ", plan_coords)
         print("Total cost: ", cost)
         exit()
@@ -236,10 +245,10 @@ if __name__ == "__main__":
         if not milestones_list:
             break
         # Repeatedly train rl agent to reach each milestone.
-        plan_coords, cost = get_plan_nondet(ARGS.costmap, init_state, milestones_list, ARGS.obj, ARGS.learning_rate,
-                                            ARGS.exp_rate, ARGS.episodes, ARGS.gamma)
+        plan_coords, cost, q_vals = get_plan_nondet(ARGS.costmap, init_state, milestones_list, ARGS.obj, ARGS.learning_rate,
+                                            ARGS.exp_rate, ARGS.episodes, ARGS.gamma, ARGS.show_qvals)
         cost_so_far += cost
-        total_plan.append(plan_coords[0])
+        #total_plan.append(plan_coords[0])
         if init_plan_state is None:
             init_plan_state = plan_coords[0]
         total_plan += plan_coords[1:]
