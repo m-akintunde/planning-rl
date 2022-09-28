@@ -44,11 +44,11 @@ class Planner:
         s = ag.getPolicy()
         ag.showPolicyValues(s, objs, emergency_objs)
         d = {}
-        if self.nondet:
-            for k, v in ag.Q_values.items():
-                d[pair_to_int(*k)] = v
-                if self.show_qvals:
-                    print(pair_to_int(*k), v)
+        vs = ag.Q_values if self.nondet else ag.state_values
+        for k, v in vs.items():
+            d[pair_to_int(*k)] = v
+            if self.show_qvals:
+                print(pair_to_int(*k), v)
 
         plan_coords = [c for c, a in s]
         cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
