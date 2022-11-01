@@ -5,6 +5,7 @@ from utils import int_to_pair, pair_to_int
 from agents.qlagent import QLAgent
 from agents.viagent import VIAgent
 
+
 class Planner:
     def __init__(self, args):
         self.nondet = args.nondet
@@ -43,6 +44,7 @@ class Planner:
         # The policy as an array of (state, action) pairs.
         s = ag.getPolicy()
         ag.showPolicyValues(s, objs, emergency_objs)
+        #ag.showValues()
         d = {}
         vs = ag.Q_values if self.nondet else ag.state_values
         for k, v in vs.items():

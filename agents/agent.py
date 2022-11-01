@@ -9,8 +9,8 @@ class Agent:
         self.start_state = start_state
         self.obj = obj
         self.determine = False
-        self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine, obj=self.obj,
-                           cm=cm)
+        self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine,
+                           obj=self.obj, cm=cm)
         self.lr = lr
         self.cm = cm
 
@@ -53,6 +53,7 @@ class Agent:
 
     def chooseNondetPolicyAction(self):
         pass
+
     def getNondetPolicy(self):
         pass
 

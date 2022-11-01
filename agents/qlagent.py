@@ -21,7 +21,7 @@ class QLAgent(Agent):
         self.decay_gamma = decay_gamma
 
     def chooseAction(self):
-        mx_nxt_reward = 0
+        mx_nxt_reward = float('-inf')
         action = ""
         # Choose action with the highest expected value.
         if np.random.uniform(0, 1) <= self.exp_rate:
@@ -41,8 +41,6 @@ class QLAgent(Agent):
 
     def showPolicyValues(self, states, objs, emergency_objs):
         directions = {"left": "<", "right": ">", "up": "^", "down": "v"}
-        #for k, v in self.Q_values.items():
-        #    print(k, v)
         for i in range(0, BOARD_ROWS):
             print('-------------------------------------------------------------------------------------------')
             out = '| '
@@ -50,9 +48,9 @@ class QLAgent(Agent):
                 q_vals = self.Q_values[(i, j)]
                 st = directions[max(q_vals, key=q_vals.get)]
                 if (i, j) in emergency_objs or self.obj and (i, j) in objs:
-                    st = "----"
+                    st += " --"
                 if (i, j) == self.win_state:
-                    st = "*"
+                    st += " *"
                 if (i, j) == self.start_state:
                     st += " (s)"
 
@@ -60,6 +58,17 @@ class QLAgent(Agent):
             print(out)
         print('-------------------------------------------------------------------------------------------')
         print()
+
+    def showValues(self, states, objs, emergency_objs):
+        for i in range(0, BOARD_ROWS):
+            print('-------------------------------------------------------------------------------------------')
+            out = '| '
+            for j in range(0, BOARD_COLS):
+                q_vals = self.Q_values[(i, j)]
+                st = max(q_vals, key=q_vals.get)
+                out += str(st).ljust(6) + ' | '
+            print(out)
+        print('----------------------------------')
 
     def play(self, rounds=10):
         i = 0
@@ -71,8 +80,8 @@ class QLAgent(Agent):
                 # Set all actions of the last state as the current reward (must be 1 since no fail state).
                 # Helps to "converge faster".
                 reward = self.State.giveReward()
-                for a in self.actions:
-                    self.Q_values[self.State.state][a] = reward
+                # for a in self.actions:
+                #     self.Q_values[self.State.state][a] = reward
                 #print("Game End Reward", reward)
                 for s in reversed(self.states):
                     current_q_value = self.Q_values[s[0]][s[1]]
@@ -84,13 +93,17 @@ class QLAgent(Agent):
                 action = self.chooseAction()
                 # append trace
                 self.states.append((self.State.state, action))
-                # print("current position {} action {}".format(self.State.state, action))
+                s = self.State.state
+
+                print("current position {} action {}".format(self.State.state, action))
                 # by taking the action, it reaches the next state
                 self.State = self.takeAction(action)
+                r = self.State.giveReward()
                 # mark is end
+                # self.Q_values[s][action] = r + max(self.Q_values[self.State.state].values())
                 self.State.isEndFunc()
-                # print("nxt state", self.State.state)
-                # print("---------------------")
+                print("nxt state", self.State.state)
+                print("---------------------")
                 self.isEnd = self.State.isEnd
 
     def reset(self):
@@ -107,6 +120,7 @@ class QLAgent(Agent):
         action = ""
         for a in self.actions:
             # if the action is deterministic (does this apply here?)
+            # Get state corresponding to next position.
             nxt_pos = self.State.nxtPosition(a)
             if nxt_pos == self.State.state or (len(self.states) > 0 and nxt_pos in [s[0] for s in self.states]):
                 nxt_reward = 0

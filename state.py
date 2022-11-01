@@ -24,13 +24,15 @@ class State:
     def giveReward(self):
         if self.state == self.win_state:
             return 1
-        #elif self.state == LOSE_STATE:
-        #    return -1
+        elif self.state in self.emergency_objs:
+            return -100
+        elif self.state in self.objs:
+            return -3
         else:
             return 0
 
     def isEndFunc(self):
-        if self.state == self.win_state:  # or (self.state == LOSE_STATE):
+        if self.state == self.win_state:
             self.isEnd = True
 
     def _chooseActionProb(self, action):
@@ -72,12 +74,13 @@ class State:
         # if next state legal
         if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
             if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
-                if not self.obj:
-                    if nxtState not in self.emergency_objs:
-                        return nxtState
-                # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                elif self.obj and nxtState not in self.objs:
-                    return nxtState
+                return nxtState
+                # if not self.obj:
+                #    if nxtState not in self.emergency_objs:
+                #        return nxtState
+                ## TODO: Treat red blocks as states with negative reward rather than pure obstacle.
+                #elif self.obj and nxtState not in self.objs:
+                #    return nxtState
         return self.state
 
     def nxtPolicyPosition(self, action):

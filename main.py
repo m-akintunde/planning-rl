@@ -14,8 +14,6 @@ if __name__ == "__main__":
                         help="Exploration rate.")
     parser.add_argument("-eps", "--episodes", default=100, type=float,
                         help="Number of episodes to train for.")
-    # TODO: Use this to toggle between the two agents.
-    # parser.add_argument("-nd", "--nondet", default=False, action='store_true', help="Non-deterministic env or not")
     parser.add_argument("-cm", "--costmap", default=CM, nargs='+', help="Cost map")
     parser.add_argument("-i", "--init", default=MILESTONES[0], type=int, help="New initial state")
     parser.add_argument("-ms", "--milestones", default=MILESTONES[1:], nargs='+', help="List of remaining milestones")
