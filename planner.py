@@ -3,7 +3,7 @@ from timeit import default_timer as timer
 
 from utils import int_to_pair, pair_to_int
 from agents.qlagent import QLAgent
-from agents.viagent import VIAgent
+# from agents.viagent import VIAgent
 
 
 class Planner:
@@ -12,7 +12,7 @@ class Planner:
         self.gamma = args.gamma
         self.show_qvals = args.show_qvals
 
-    def get_plan(self, cost_map, new_initial_state, milestones_list, obj, lr, er, eps):
+    def get_plan(self, cost_map, new_initial_state, milestones_list, obj, lr, er, eps, p):
         cost_map = list(map(int, cost_map))
         init = int(new_initial_state)
         dest = int(milestones_list[0])
@@ -20,13 +20,13 @@ class Planner:
         if not milestones_list:
             return
 
-        if self.nondet:
-            ag = QLAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
-                         lr=lr, exp_rate=er, cm=cost_map, obj=obj,
-                         decay_gamma=self.gamma)
-        else:
-            ag = VIAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
-                         lr=lr, exp_rate=er, cm=cost_map, obj=obj)
+        #if self.nondet:
+        ag = QLAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
+                     lr=lr, exp_rate=er, cm=cost_map, obj=obj,
+                     decay_gamma=self.gamma, prob=p, determine=not self.nondet)
+        # else:
+        #     ag = VIAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
+        #                  lr=lr, exp_rate=er, cm=cost_map, obj=obj)
 
         objs = ag.getObjs()
         emergency_objs = ag.getEmergencyObjs()
@@ -46,7 +46,7 @@ class Planner:
         ag.showPolicyValues(s, objs, emergency_objs)
         #ag.showValues()
         d = {}
-        vs = ag.Q_values if self.nondet else ag.state_values
+        vs = ag.Q_values  # if self.nondet else ag.state_values
         for k, v in vs.items():
             d[pair_to_int(*k)] = v
             if self.show_qvals:

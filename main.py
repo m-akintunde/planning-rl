@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--learning_rate", default=0.2, type=float, help="Learning rate")
     parser.add_argument("-e", "--exp_rate", default=0.5, type=float,
                         help="Exploration rate.")
-    parser.add_argument("-eps", "--episodes", default=100, type=float,
+    parser.add_argument("-eps", "--episodes", default=1000, type=float,
                         help="Number of episodes to train for.")
     parser.add_argument("-cm", "--costmap", default=CM, nargs='+', help="Cost map")
     parser.add_argument("-i", "--init", default=MILESTONES[0], type=int, help="New initial state")
@@ -20,16 +20,19 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--single", default=False, action='store_true', help="Single path or iterate through all milestones")
     parser.add_argument("-q", "--show_qvals", default=False, action='store_true', help="Whether to show q values or not. Default: False.")
     parser.add_argument("-g", "--gamma", default=0.9, type=float, help="Gamma decay rate")
+    parser.add_argument("-p", "--prob", default=0.8, type=float, help="Probability of successful transition. "
+                                                                      "Otherwise perpendicular move with (1-p)/2 chance")
 
     # TODO: Implement timeout functionality.
     parser.add_argument("-to", "--timeout", default=2, type=int, help="Timeout in minutes.")
 
     ARGS = parser.parse_args()
     planner = Planner(ARGS)
+    pr = ARGS.prob if ARGS.nondet else 1
     if ARGS.single:
         if ARGS.init and (not ARGS.milestones or ARGS.init == ARGS.milestones[0]):
             raise Exception("List of milestones is required when initial state specified.")
-        plan_coords, cost, vals = planner.get_plan(ARGS.costmap, ARGS.init, ARGS.milestones, ARGS.obj, ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes)
+        plan_coords, cost, vals = planner.get_plan(ARGS.costmap, ARGS.init, ARGS.milestones, ARGS.obj, ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes, pr)
         print("Plan: ", plan_coords)
         print("Total cost: ", cost)
         exit()
@@ -51,7 +54,7 @@ if __name__ == "__main__":
         if not milestones_list:
             break
         # Repeatedly train rl agent to reach each milestone.
-        plan_coords, cost, vals = planner.get_plan(ARGS.costmap, init_state, milestones_list, ARGS.obj, ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes)
+        plan_coords, cost, vals = planner.get_plan(ARGS.costmap, init_state, milestones_list, ARGS.obj, ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes, pr)
         cost_so_far += cost
         if init_plan_state is None:
             init_plan_state = plan_coords[0]

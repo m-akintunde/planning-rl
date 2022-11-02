@@ -6,9 +6,10 @@ from utils import BOARD_ROWS, BOARD_COLS
 
 
 class QLAgent(Agent):
-    def __init__(self, start_state, win_state, cm, lr=0.2, exp_rate=0.5, decay_gamma=0.9, obj=True):
-        print("Constructing q-learning (non-deterministic) agent with start state", start_state, "win state", win_state)
-        super().__init__(start_state, win_state, cm, lr, exp_rate, obj)
+    def __init__(self, start_state, win_state, cm, lr=0.2, exp_rate=0.5, decay_gamma=0.9, obj=True, prob=0.8, determine=False):
+        txt = "deterministic" if determine else "non-deterministic, p = " + str(prob)
+        print("Constructing q-learning (", txt, ") agent with start state", start_state, "win state", win_state)
+        super().__init__(start_state, win_state, cm, lr, exp_rate, obj, prob, determine)
 
         self.Q_values = {}
         for i in range(BOARD_ROWS):
@@ -89,7 +90,7 @@ class QLAgent(Agent):
             else:
                 action = self.chooseAction()
                 # append trace
-                self.states.append((self.State.state, action))
+                # self.states.append((self.State.state, action))
                 s = self.State.state
 
                 # print("current position {} action {}".format(self.State.state, action))
@@ -100,11 +101,9 @@ class QLAgent(Agent):
                 best_next_action = max(self.Q_values[self.State.state], key=self.Q_values[self.State.state].get)
                 td_target = r + self.decay_gamma * self.Q_values[self.State.state][best_next_action]
                 td_delta = td_target - self.Q_values[s][action]
-                # print(td_delta)
                 self.Q_values[s][action] += self.lr * td_delta
 
                 # mark is end
-                # self.Q_values[s][action] = r + max(self.Q_values[self.State.state].values())
                 self.State.isEndFunc()
                 # print("nxt state", self.State.state)
                 # print("---------------------")
@@ -112,12 +111,12 @@ class QLAgent(Agent):
 
     def reset(self):
         self.states = []
-        self.State = State(self.start_state, self.win_state, False, self.cm, self.obj)
+        self.State = State(self.start_state, self.win_state, self.determine, self.cm, self.obj, self.p)
         self.isEnd = self.State.isEnd
 
     def takeAction(self, action):
         position = self.State.nxtPosition(action)
-        return State(position, self.win_state, False, self.cm, self.obj)
+        return State(position, self.win_state, self.determine, self.cm, self.obj, self.p)
 
     def chooseNondetPolicyAction(self):
         mx_nxt_reward = 0
@@ -137,7 +136,7 @@ class QLAgent(Agent):
 
     def getNondetPolicy(self):
         # "Reset" with initial state at the beginning of path.
-        self.State = State(self.start_state, self.win_state, self.determine, self.cm, self.obj)
+        self.State = State(self.start_state, self.win_state, self.determine, self.cm, self.obj, self.p)
         self.states = [(self.State.state, "*")]
         while not self.State.isEnd:
             action = self.chooseNondetPolicyAction()

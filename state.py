@@ -1,13 +1,15 @@
 import numpy as np
 
-from utils import BOARD_ROWS, BOARD_COLS, int_to_pair, EMERGENCY_COSTS
+from utils import BOARD_ROWS, BOARD_COLS, int_to_pair, EMERGENCY_COSTS, pair_to_int
+
 
 # Representation of the gridworld.
 class State:
-    def __init__(self, state, win_state, determine, cm, obj=True):
+    def __init__(self, state, win_state, determine, cm, obj=True, prob=0.8):
         self.board = np.zeros([BOARD_ROWS, BOARD_COLS])
         self.obj = obj
         self.cm = cm
+        self.p = prob
 
         self.emergency_objs = [int_to_pair(i) for i, j in enumerate(cm) if j in EMERGENCY_COSTS]
         self.objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 3] + self.emergency_objs
@@ -22,28 +24,34 @@ class State:
         self.win_state = win_state
 
     def giveReward(self):
+        cm_value = self.cm[pair_to_int(*self.state)]
         if self.state == self.win_state:
             return 1
-        elif self.state in self.emergency_objs:
-            return -100
-        elif self.state in self.objs:
-            return -5 if self.obj else -1
-        else:
+        elif cm_value == 1:
             return -1
+        elif cm_value not in (1, 3):  #self.state in self.emergency_objs:
+            return -1000
+        elif cm_value == 3:
+            return -5
+        # elif self.state in self.objs:
+        #     return -5 if self.obj else -1
+        # else:
+        #     return -1
 
     def isEndFunc(self):
         if self.state == self.win_state:
             self.isEnd = True
 
     def _chooseActionProb(self, action):
+        probs = [self.p, (1-self.p)/2, (1-self.p)/2]
         if action == "up":
-            return np.random.choice(["up", "left", "right"], p=[0.8, 0.1, 0.1])
+            return np.random.choice(["up", "left", "right"], p=probs)
         if action == "down":
-            return np.random.choice(["down", "left", "right"], p=[0.8, 0.1, 0.1])
+            return np.random.choice(["down", "left", "right"], p=probs)
         if action == "left":
-            return np.random.choice(["left", "up", "down"], p=[0.8, 0.1, 0.1])
+            return np.random.choice(["left", "up", "down"], p=probs)
         if action == "right":
-            return np.random.choice(["right", "up", "down"], p=[0.8, 0.1, 0.1])
+            return np.random.choice(["right", "up", "down"], p=probs)
 
     def nxtPosition(self, action):
         """
@@ -101,10 +109,10 @@ class State:
         # if next state legal
         if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
             if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
-                if not self.obj:
-                    if nxtState not in self.emergency_objs:
-                        return nxtState
-                # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                elif self.obj and nxtState not in self.objs:
-                    return nxtState
+                # if not self.obj:
+                #     if nxtState not in self.emergency_objs:
+                #         return nxtState
+                # # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
+                # elif self.obj and nxtState not in self.objs:
+                return nxtState
         return self.state

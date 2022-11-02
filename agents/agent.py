@@ -3,15 +3,16 @@ from utils import pair_to_int
 
 
 class Agent:
-    def __init__(self, start_state, win_state, cm, lr=0.2, exp_rate=0.5, obj=True):
+    def __init__(self, start_state, win_state, cm, lr=0.2, exp_rate=0.5, obj=True, prob=0.8, determine=False):
         self.states = []
         self.actions = ["up", "down", "left", "right"]
         self.win_state = win_state
         self.start_state = start_state
         self.obj = obj
-        self.determine = False
+        self.determine = determine
+        self.p = prob
         self.State = State(state=self.start_state, win_state=self.win_state, determine=self.determine,
-                           obj=self.obj, cm=cm)
+                           obj=self.obj, cm=cm, prob=prob)
         self.lr = lr
         self.cm = cm
 
@@ -21,7 +22,7 @@ class Agent:
 
     def getPolicy(self):
         # "Reset" with initial state at the beginning of path.
-        self.State = State(self.start_state, self.win_state, self.determine, self.cm, self.obj)
+        self.State = State(self.start_state, self.win_state, self.determine, self.cm, self.obj, self.p)
         self.states = [(self.State.state, "*")]
         while not self.State.isEnd:
             action = self.choosePolicyAction()
