@@ -23,6 +23,7 @@ CM = [
      1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 ]
 
+EMERGENCY_COSTS = (100, 50)
 
 # Converts a pair to an integer.
 def pair_to_int(i, j):

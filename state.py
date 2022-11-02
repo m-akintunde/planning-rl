@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils import BOARD_ROWS, BOARD_COLS, int_to_pair
+from utils import BOARD_ROWS, BOARD_COLS, int_to_pair, EMERGENCY_COSTS
 
 # Representation of the gridworld.
 class State:
@@ -9,7 +9,7 @@ class State:
         self.obj = obj
         self.cm = cm
 
-        self.emergency_objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 100]
+        self.emergency_objs = [int_to_pair(i) for i, j in enumerate(cm) if j in EMERGENCY_COSTS]
         self.objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 3] + self.emergency_objs
         for o in self.emergency_objs:
             self.board[o[0], o[1]] = -1
