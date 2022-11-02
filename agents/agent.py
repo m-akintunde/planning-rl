@@ -1,4 +1,5 @@
 from state import State
+from utils import pair_to_int
 
 
 class Agent:
@@ -33,6 +34,7 @@ class Agent:
             # mark is end
             self.State.isEndFunc()
             print("nxt state", self.State.state)
+            print("cost", self.cm[pair_to_int(*self.State.state)])
             print("---------------------")
         return self.states
 

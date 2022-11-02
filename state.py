@@ -27,9 +27,9 @@ class State:
         elif self.state in self.emergency_objs:
             return -100
         elif self.state in self.objs:
-            return -3
+            return -5 if self.obj else -1
         else:
-            return 0
+            return -1
 
     def isEndFunc(self):
         if self.state == self.win_state:

@@ -80,30 +80,34 @@ class QLAgent(Agent):
                 # Set all actions of the last state as the current reward (must be 1 since no fail state).
                 # Helps to "converge faster".
                 reward = self.State.giveReward()
-                # for a in self.actions:
-                #     self.Q_values[self.State.state][a] = reward
+                for a in self.actions:
+                    self.Q_values[self.State.state][a] = reward
                 #print("Game End Reward", reward)
-                for s in reversed(self.states):
-                    current_q_value = self.Q_values[s[0]][s[1]]
-                    reward = current_q_value + self.lr * (self.decay_gamma * reward - current_q_value)
-                    self.Q_values[s[0]][s[1]] = round(reward, 3)
                 self.reset()
                 i += 1  # End of episode, increase counter until reached max number of episodes.
+                # print("Episode:", i)
             else:
                 action = self.chooseAction()
                 # append trace
                 self.states.append((self.State.state, action))
                 s = self.State.state
 
-                print("current position {} action {}".format(self.State.state, action))
+                # print("current position {} action {}".format(self.State.state, action))
                 # by taking the action, it reaches the next state
                 self.State = self.takeAction(action)
                 r = self.State.giveReward()
+
+                best_next_action = max(self.Q_values[self.State.state], key=self.Q_values[self.State.state].get)
+                td_target = r + self.decay_gamma * self.Q_values[self.State.state][best_next_action]
+                td_delta = td_target - self.Q_values[s][action]
+                # print(td_delta)
+                self.Q_values[s][action] += self.lr * td_delta
+
                 # mark is end
                 # self.Q_values[s][action] = r + max(self.Q_values[self.State.state].values())
                 self.State.isEndFunc()
-                print("nxt state", self.State.state)
-                print("---------------------")
+                # print("nxt state", self.State.state)
+                # print("---------------------")
                 self.isEnd = self.State.isEnd
 
     def reset(self):
