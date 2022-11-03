@@ -23,7 +23,7 @@ CM = [
      1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 ]
 
-EMERGENCY_COSTS = (100, 50)
+NOT_EMERGENCY_COSTS = (1, 3)
 
 
 # Converts a pair to an integer.

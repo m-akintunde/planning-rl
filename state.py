@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils import BOARD_ROWS, BOARD_COLS, int_to_pair, EMERGENCY_COSTS, pair_to_int
+from utils import BOARD_ROWS, BOARD_COLS, int_to_pair, NOT_EMERGENCY_COSTS, pair_to_int
 
 
 # Representation of the gridworld.
@@ -11,7 +11,8 @@ class State:
         self.cm = cm
         self.p = prob
 
-        self.emergency_objs = [int_to_pair(i) for i, j in enumerate(cm) if j in EMERGENCY_COSTS]
+        # TODO: Are these ever used?
+        self.emergency_objs = [int_to_pair(i) for i, j in enumerate(cm) if j not in NOT_EMERGENCY_COSTS]
         self.objs = [int_to_pair(i) for i, j in enumerate(cm) if j == 3] + self.emergency_objs
         for o in self.emergency_objs:
             self.board[o[0], o[1]] = -1
@@ -29,14 +30,10 @@ class State:
             return 1
         elif cm_value == 1:
             return -1
-        elif cm_value not in (1, 3):  #self.state in self.emergency_objs:
+        elif cm_value not in (1, 3):
             return -10 * cm_value
         elif cm_value == 3:
             return -5 if self.obj else -1
-        # elif self.state in self.objs:
-        #     return -5 if self.obj else -1
-        # else:
-        #     return -1
 
     def isEndFunc(self):
         if self.state == self.win_state:
@@ -83,12 +80,6 @@ class State:
         if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
             if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
                 return nxtState
-                # if not self.obj:
-                #    if nxtState not in self.emergency_objs:
-                #        return nxtState
-                ## TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                #elif self.obj and nxtState not in self.objs:
-                #    return nxtState
         return self.state
 
     def nxtPolicyPosition(self, action):
@@ -109,10 +100,5 @@ class State:
         # if next state legal
         if (nxtState[0] >= 0) and (nxtState[0] <= (BOARD_ROWS - 1)):
             if (nxtState[1] >= 0) and (nxtState[1] <= (BOARD_COLS - 1)):
-                # if not self.obj:
-                #     if nxtState not in self.emergency_objs:
-                #         return nxtState
-                # # TODO: Treat red blocks as states with negative reward rather than pure obstacle.
-                # elif self.obj and nxtState not in self.objs:
                 return nxtState
         return self.state

@@ -3,7 +3,6 @@ from timeit import default_timer as timer
 
 from utils import int_to_pair, pair_to_int
 from agents.qlagent import QLAgent
-# from agents.viagent import VIAgent
 
 
 class Planner:
@@ -20,13 +19,9 @@ class Planner:
         if not milestones_list:
             return
 
-        #if self.nondet:
         ag = QLAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
                      lr=lr, exp_rate=er, cm=cost_map, obj=obj,
                      decay_gamma=self.gamma, prob=p, determine=not self.nondet)
-        # else:
-        #     ag = VIAgent(start_state=int_to_pair(init), win_state=int_to_pair(dest),
-        #                  lr=lr, exp_rate=er, cm=cost_map, obj=obj)
 
         objs = ag.getObjs()
         emergency_objs = ag.getEmergencyObjs()
