@@ -30,9 +30,9 @@ class State:
         elif cm_value == 1:
             return -1
         elif cm_value not in (1, 3):  #self.state in self.emergency_objs:
-            return -1000
+            return -10 * cm_value
         elif cm_value == 3:
-            return -5
+            return -5 if self.obj else -1
         # elif self.state in self.objs:
         #     return -5 if self.obj else -1
         # else:
