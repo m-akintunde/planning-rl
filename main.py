@@ -24,6 +24,8 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--gamma", default=0.9, type=float, help="Gamma decay rate")
     parser.add_argument("-p", "--prob", default=0.8, type=float,
                         help="Probability of successful transition. Otherwise perpendicular move with (1-p)/2 chance")
+    parser.add_argument("-f", "--file", default="qvals.txt", type=str,
+                        help="Path to store q values")
 
     # TODO: Implement timeout functionality.
     parser.add_argument("-to", "--timeout", default=2, type=int, help="Timeout in minutes.")
@@ -74,4 +76,3 @@ if __name__ == "__main__":
     print("Total length: ", total_length, "blocks.")
     print("Plan: ", total_plan)
     print("Total cost: ", cost_so_far)
-

@@ -10,6 +10,7 @@ class Planner:
         self.nondet = args.nondet
         self.gamma = args.gamma
         self.show_qvals = args.show_qvals
+        self.filename = args.file
 
     def get_plan(self, cost_map, new_initial_state, milestones_list, obj, lr, er, eps, p):
         cost_map = list(map(int, cost_map))
@@ -42,10 +43,16 @@ class Planner:
         #ag.showValues()
         d = {}
         vs = ag.Q_values  # if self.nondet else ag.state_values
+        f = []
         for k, v in vs.items():
             d[pair_to_int(*k)] = v
+            f.append(str(pair_to_int(*k)) + ', ' + str(v))
             if self.show_qvals:
                 print(pair_to_int(*k), v)
+        q_vals_contents = '\n'.join(f)
+        # Save q values to file.
+        with open(self.filename, 'w') as file:
+            file.write(q_vals_contents)
 
         plan_coords = [c for c, a in s]
         cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
