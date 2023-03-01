@@ -11,6 +11,7 @@ class Planner:
         self.gamma = args.gamma
         self.show_qvals = args.show_qvals
         self.filename = args.file
+        self.run_policy = args.run_policy
 
     def get_plan(self, cost_map, new_initial_state, milestones_list, obj, lr, er, eps, p):
         cost_map = list(map(int, cost_map))
@@ -32,14 +33,9 @@ class Planner:
         end_time = timer()
         print("End: ", datetime.datetime.now())  # Do not delete
         print("Time taken               ", end_time - start_time)
-        print("State values computed using value iteration:")
+        #print("State values computed using value iteration:")
         #ag.showValues()
 
-        print("Policy:")
-
-        # The policy as an array of (state, action) pairs.
-        s = ag.getPolicy()
-        ag.showPolicyValues(s, objs, emergency_objs)
         #ag.showValues()
         d = {}
         vs = ag.Q_values  # if self.nondet else ag.state_values
@@ -54,8 +50,16 @@ class Planner:
         with open(self.filename, 'w') as file:
             file.write(q_vals_contents)
 
-        plan_coords = [c for c, a in s]
-        cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
+        plan_coords = []
+        cost = 0
+        if self.run_policy:
+            print("Policy:")
+
+            # The policy as an array of (state, action) pairs.
+            s = ag.getPolicy()
+            ag.showPolicyValues(s, objs, emergency_objs)
+            plan_coords = [c for c, a in s]
+            cost = sum(cost_map[pair_to_int(i, j)] for i, j in plan_coords[1:])
 
         # *** Extract the actions from the policy. This will be used in integration into UI. ***
         return plan_coords, cost, d

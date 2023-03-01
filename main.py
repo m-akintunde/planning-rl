@@ -26,6 +26,8 @@ if __name__ == "__main__":
                         help="Probability of successful transition. Otherwise perpendicular move with (1-p)/2 chance")
     parser.add_argument("-f", "--file", default="qvals.txt", type=str,
                         help="Path to store q values")
+    parser.add_argument("-r", "--run_policy", default=False, action='store_true',
+                        help="Run the generated policy.")
 
     # TODO: Implement timeout functionality.
     parser.add_argument("-to", "--timeout", default=2, type=int, help="Timeout in minutes.")
@@ -38,8 +40,9 @@ if __name__ == "__main__":
             raise Exception("List of milestones is required when initial state specified.")
         plan_coords, cost, vals = planner.get_plan(ARGS.costmap, ARGS.init, ARGS.milestones, ARGS.obj,
                                                    ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes, pr)
-        print("Plan: ", plan_coords)
-        print("Total cost: ", cost)
+        if ARGS.run_policy:
+            print("Plan: ", plan_coords)
+            print("Total cost: ", cost)
         exit()
 
     start = 0
@@ -61,18 +64,21 @@ if __name__ == "__main__":
         # Repeatedly train rl agent to reach each milestone.
         plan_coords, cost, vals = planner.get_plan(ARGS.costmap, init_state, milestones_list, ARGS.obj,
                                                    ARGS.learning_rate, ARGS.exp_rate, ARGS.episodes, pr)
-        cost_so_far += cost
-        if init_plan_state is None:
-            init_plan_state = plan_coords[0]
-        total_plan += plan_coords[1:]
-        print("Cost so far: ", cost_so_far)
-        total_length += len(plan_coords) - 1
-        print("Reached", NAMES.get(int(milestones[end]), "cell " + milestones[end]), "after", total_length, "blocks.")
+        if ARGS.run_policy:
+            cost_so_far += cost
+            if init_plan_state is None:
+                init_plan_state = plan_coords[0]
+            total_plan += plan_coords[1:]
+            print("Cost so far: ", cost_so_far)
+            total_length += len(plan_coords) - 1
+            print("Reached", NAMES.get(int(milestones[end]), "cell " + milestones[end]), "after", total_length, "blocks.")
 
         start += 1
         end += 1
 
-    total_plan = [init_plan_state] + total_plan
-    print("Total length: ", total_length, "blocks.")
-    print("Plan: ", total_plan)
-    print("Total cost: ", cost_so_far)
+    if ARGS.run_policy:
+        total_plan = [init_plan_state] + total_plan
+        print("Total length: ", total_length, "blocks.")
+        print("Plan: ", total_plan)
+        print("Total cost: ", cost_so_far)
+
