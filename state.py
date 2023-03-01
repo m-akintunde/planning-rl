@@ -33,7 +33,7 @@ class State:
         elif cm_value not in (1, 3):
             return -10 * cm_value
         elif cm_value == 3:
-            return -5 if self.obj else -1
+            return -3 if self.obj else -1
 
     def isEndFunc(self):
         if self.state == self.win_state:
